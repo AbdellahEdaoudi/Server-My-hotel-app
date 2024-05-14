@@ -379,5 +379,14 @@ app.delete("/BookingdAll", async (req, res) => {
     res.status(500).json({ error: "An error occurred while deleting documents" });
   }
 });
+app.get('/Bookingpay',async(req,res)=>{
+  try {
+     const { bookings } = req.body;
+      const Booking =await BookingSchema.find({ _id: { $in: bookings } });
+      res.json(Booking)
+  } catch (error) {
+      res.json(error)
+  }
+})
 
 
