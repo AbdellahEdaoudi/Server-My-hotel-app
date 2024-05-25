@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 4444;
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cors = require("cors");
+const multer = require('multer')
 app.use(cors());
 
 // CORS middleware
@@ -37,7 +38,15 @@ const VerifyToken = (req, res, next) => {
   });
 };
 
-
+const storage = multer.diskStorage({
+  destination : function(req,file,cb){
+    return cb(null, "./public/Images")
+  },
+  filename: function(req,file,cb){
+    return cb(null, `${Date.now()}_${file.originalname}`) 
+  }
+})
+const upload = multer({storage})
 mongoose.set('strictQuery', true);
 
 mongoose.connect("mongodb+srv://edaoudiEdhotel:IqHpjXDkyHrFQzVe@cluster0.rzchldc.mongodb.net/")
@@ -211,18 +220,18 @@ app.get('/Rooms',async(req,res)=>{
 })
 
 //  ajouter nouveau Rooms
-app.post('/Rooms',async(req,res)=>{
+app.post('/Rooms', upload.single('image'), async (req, res) => {
+  try {
+    const { name, type, description, capacity, prix } = req.body;
+    const imageUrl = req.file ? `/public/Images/${req.file.filename}` : '';
 
-try {
-  const {imageUrl, name, type,description, capacity, prix} = req.body;
-  const nRooms= new RoomsSch({imageUrl, name, type,description, capacity, prix});
-  const Rooms= await nRooms.save();
-  res.json(Rooms);
-} catch (error) {
-  res.json(error)
-}
-
-})
+    const nRooms = new RoomsSch({ imageUrl, name, type, description, capacity, prix });
+    const Rooms = await nRooms.save();
+    res.json(Rooms);
+  } catch (error) {
+    res.json(error);
+  }
+});
 // ajout doc ROomse
 app.post("/Roomss", async (req, res) => {
   try {
