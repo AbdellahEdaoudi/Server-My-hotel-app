@@ -41,7 +41,7 @@ const VerifyToken = (req, res, next) => {
 mongoose.set('strictQuery', true);
 
 mongoose.connect(process.env.URL_DATABASE)
-  // mongoose.connect("mongodb://127.0.0.1:27017/auth-my-htl-app")
+  // mongoose.connect("mongodb://127.0.0.1:27017/auth")
   .then(() => {
     console.log(`Connect to Mongodb Atlas`);
   })
