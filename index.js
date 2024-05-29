@@ -7,11 +7,13 @@ const User = require("./Models/UserSchema");
 const RoomsSch = require("./Models/hotelSchema");
 const ContactSchema = require('./Models/ContactSchema');
 const BookingSchema = require('./Models/BookingSchema');
+const CheckoutShema = require('./Models/CheckoutShema');
 const PORT = process.env.PORT || 4444;
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cors = require("cors");
-const multer = require('multer')
+const cloudinary = require("./utils/cloudinary");
+const upload = require("./middleware/multer")
 app.use(cors());
 
 // CORS middleware
@@ -38,17 +40,8 @@ const VerifyToken = (req, res, next) => {
   });
 };
 
-const storage = multer.diskStorage({
-  destination : function(req,file,cb){
-    return cb(null, "./public/Images")
-  },
-  filename: function(req,file,cb){
-    return cb(null, `${Date.now()}_${file.originalname}`) 
-  }
-})
-const upload = multer({storage})
-mongoose.set('strictQuery', true);
 
+mongoose.set('strictQuery', true);
 mongoose.connect("mongodb+srv://edaoudiEdhotel:IqHpjXDkyHrFQzVe@cluster0.rzchldc.mongodb.net/")
   // mongoose.connect("mongodb://127.0.0.1:27017/auth")
   .then(() => {
@@ -208,28 +201,39 @@ app.post("/logout", async (req, res) => {
 // hotelSchema
 
 //  get all Rooms
-app.get('/Rooms',async(req,res)=>{
+app.get('/Rooms', async (req, res) => {
   try {
-      const Rooms=await RoomsSch.find();
-      res.json(Rooms)
-      
+    const Rooms = await RoomsSch.find();
+    res.json(Rooms)
+
   } catch (error) {
-      res.json(error)
+    res.json(error)
   }
 
 })
-
 //  ajouter nouveau Rooms
 app.post('/Rooms', upload.single('image'), async (req, res) => {
   try {
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path);
     const { name, type, description, capacity, prix } = req.body;
-    const imageUrl = req.file ? `/public/Images/${req.file.filename}` : '';
-
-    const nRooms = new RoomsSch({ imageUrl, name, type, description, capacity, prix });
+    const nRooms = new RoomsSch({
+      imageUrl: result.secure_url,
+      name,
+      type,
+      description,
+      capacity,
+      prix
+    });
     const Rooms = await nRooms.save();
-    res.json(Rooms);
+    res.status(200).json(Rooms);
   } catch (error) {
-    res.json(error);
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error",
+      error: error.message
+    });
   }
 });
 // ajout doc ROomse
@@ -243,41 +247,74 @@ app.post("/Roomss", async (req, res) => {
   }
 });
 //  get Rooms by Id
-app.get('/Rooms/:id',async(req,res)=>{
-try {
-  const Rooms=await RoomsSch.findById({_id :req.params.id});
-  res.json(Rooms)
-  
-} catch (error) {
-  res.json(error)
-}
+app.get('/Rooms/:id', async (req, res) => {
+  try {
+    const Rooms = await RoomsSch.findById({ _id: req.params.id });
+    res.json(Rooms)
+
+  } catch (error) {
+    res.json(error)
+  }
 
 })
 
-// update Rooms
-app.put('/Rooms/:id',async(req,res)=>{
+app.put('/Rooms/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { name, type, description, capacity, prix } = req.body;
+    if (!name || !type || !description || !capacity || !prix) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+    let updatedRoomData = {
+      name,
+      type,
+      description,
+      capacity,
+      prix
+    };
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      updatedRoomData.imageUrl = result.secure_url;
+    }
+    const uRooms = await RoomsSch.findByIdAndUpdate(
+      { _id: req.params.id },
+      updatedRoomData,
+      { new: true }
+    );
+    if (!uRooms) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found"
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Room updated successfully",
+      data: uRooms
+    });
 
-try {
-  const { imageUrl, name, type,description, capacity, prix } = req.body;
-  const uRooms=await RoomsSch.findByIdAndUpdate({_id:req.params.id},
-    { imageUrl, name, type,description, capacity, prix },{new:true});
-  res.json(uRooms)
-  
-} catch (error) {
-  res.json(error)
-}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating room",
+      error: error.message
+    });
+  }
+});
 
-})
 
 // delete Rooms
-app.delete('/Rooms/:id',async(req,res)=>{
-try {
-  const dRooms=await RoomsSch.findByIdAndDelete({_id:req.params.id});
-  res.json(dRooms)
-  
-} catch (error) {
-  res.json(error)
-}
+app.delete('/Rooms/:id', async (req, res) => {
+  try {
+    const dRooms = await RoomsSch.findByIdAndDelete({ _id: req.params.id });
+    res.json(dRooms)
+
+  } catch (error) {
+    res.json(error)
+  }
 })
 
 app.delete("/Roomsd", async (req, res) => {
@@ -291,29 +328,31 @@ app.delete("/Roomsd", async (req, res) => {
 
 ///// CONTACT \\\\\\
 //  get all Contact
-app.get('/Contact',async(req,res)=>{
+app.get('/Contact', async (req, res) => {
   try {
-      const Contact=await ContactSchema.find();
-      res.json(Contact)
-      
+    const Contact = await ContactSchema.find();
+    res.json(Contact)
+
   } catch (error) {
-      res.json(error)
+    res.json(error)
   }
 
 })
 //  ajouter nouveau Rooms
-app.post('/Contact',async(req,res)=>{
-
-try {
-  const {name,email,subject,msg} = req.body;
-  const nContact= new ContactSchema({name,email,subject,msg});
-  const Contact= await nContact.save();
-  res.json(Contact);
-} catch (error) {
-  res.json(error)
-}
-
-})
+app.post('/Contact', async (req, res) => {
+  try {
+    const { name, email, subject, msg } = req.body;
+    const FindContact = await ContactSchema.findOne({ name, email, subject, msg });
+    if (FindContact) {
+      return res.status(400).json({ error: 'Contact already exists' });
+    }
+    const newContact = new ContactSchema({ name, email, subject, msg });
+    const savedContact = await newContact.save();
+    res.json(savedContact);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 app.delete("/Contact", async (req, res) => {
   try {
     await ContactSchema.deleteMany({})
@@ -322,55 +361,76 @@ app.delete("/Contact", async (req, res) => {
     res.json(error);
   }
 });
+// ajout doc Checkout
+app.post("/ContactDoc", async (req, res) => {
+  try {
+    const documents = req.body;
+    const result = await ContactSchema.insertMany(documents);
+    res.json({ message: `${result.length} documents inserted successfully` });
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+// delete Rooms
+app.delete('/Contact/:id', async (req, res) => {
+  try {
+    const dContact = await ContactSchema.findByIdAndDelete({ _id: req.params.id });
+    res.json(dContact)
+
+  } catch (error) {
+    res.json(error)
+  }
+})
 
 ///// BOKING \\\\\\
-app.get('/Booking',async(req,res)=>{
+app.get('/Booking', async (req, res) => {
   try {
-      const Booking=await BookingSchema.find();
-      res.json(Booking)
+    const Booking = await BookingSchema.find();
+    res.json(Booking)
   } catch (error) {
-      res.json(error)
+    res.json(error)
   }
 })
 //  ajouter nouveau Booking
-app.post('/Booking',async(req,res)=>{
+app.post('/Booking', async (req, res) => {
 
-try {
-  const {nameC,email,nameR,prix,check_in,check_out} = req.body;
-  const datenew = new Date();
-  if (check_in< datenew || check_out < datenew ) {
-    return res.status(400).json({ message: "date is invalid" });
+  try {
+    const { nameC, email, nameR, prix, check_in, check_out } = req.body;
+    const datenew = new Date();
+    if (check_in < datenew || check_out < datenew) {
+      return res.status(400).json({ message: "date is invalid" });
+    }
+
+    const nBooking = new BookingSchema({ nameC, email, nameR, prix, check_in, check_out });
+    const Booking = await nBooking.save();
+    res.json(Booking);
+  } catch (error) {
+    res.json(error)
   }
-  
-  const nBooking= new BookingSchema({nameC,email,nameR,prix,check_in,check_out});
-  const Booking= await nBooking.save();
-  res.json(Booking);
-} catch (error) {
-  res.json(error)
-}
 
 })
-// update Rooms
-app.put('/Booking/:id',async(req,res)=>{
+// update Booking
+app.put('/Booking/:id', async (req, res) => {
   try {
-    const {nameC,email,nameR,prix,check_in,check_out}  = req.body;
-    const uBooking=await BookingSchema.findByIdAndUpdate({_id:req.params.id},
-      {nameC,email,nameR,prix,check_in,check_out} ,{new:true});
+    const { nameC, email, nameR, prix, check_in, check_out } = req.body;
+    const uBooking = await BookingSchema.findByIdAndUpdate({ _id: req.params.id },
+      { nameC, email, nameR, prix, check_in, check_out }, { new: true });
     res.json(uBooking)
   } catch (error) {
     res.json(error)
   }
-  
-  })
-app.delete('/Booking/:id',async(req,res)=>{
+
+})
+app.delete('/Booking/:id', async (req, res) => {
   try {
-    const dBooking=await BookingSchema.findByIdAndDelete({_id:req.params.id});
+    const dBooking = await BookingSchema.findByIdAndDelete({ _id: req.params.id });
     res.json(dBooking)
-    
+
   } catch (error) {
     res.json(error)
   }
-  })
+})
 app.delete("/Bookingd", async (req, res) => {
   try {
     await BookingSchema.deleteMany({})
@@ -389,14 +449,91 @@ app.delete("/BookingdAll", async (req, res) => {
     res.status(500).json({ error: "An error occurred while deleting documents" });
   }
 });
-app.get('/Bookingpay',async(req,res)=>{
+app.get('/Bookingpay', async (req, res) => {
   try {
-     const { bookings } = req.body;
-      const Booking =await BookingSchema.find({ _id: { $in: bookings } });
-      res.json(Booking)
+    const { bookings } = req.body;
+    const Booking = await BookingSchema.find({ _id: { $in: bookings } });
+    res.json(Booking)
   } catch (error) {
-      res.json(error)
+    res.json(error)
   }
 })
+///// paying \\\\\\
+app.get('/Checkout', async (req, res) => {
+  try {
+    const Checkout = await CheckoutShema.find();
+    res.json(Checkout)
+  } catch (error) {
+    res.json(error)
+  }
+})
+//  ajouter nouveau Checkout
+app.post('/Checkout', async (req, res) => {
 
+  try {
+    const { nameC, email, nameR, amount, check_in, check_out } = req.body;
+    const nCheckout = new CheckoutShema({ nameC, email, nameR, amount, check_in, check_out });
+    const Checkout = await nCheckout.save();
+    res.json(Checkout);
+  } catch (error) {
+    res.json(error)
+  }
 
+})
+// update Checkout
+app.put('/Checkout/:id', async (req, res) => {
+  try {
+    const { nameC, email, nameR, amount, check_in, check_out } = req.body;
+    const uCheckout = await CheckoutShema.findByIdAndUpdate({ _id: req.params.id },
+      { nameC, email, nameR, amount, check_in, check_out }, { new: true });
+    res.json(uCheckout)
+  } catch (error) {
+    res.json(error)
+  }
+})
+app.delete('/Checkout/:id', async (req, res) => {
+  try {
+    const dCheckout = await CheckoutShema.findByIdAndDelete({ _id: req.params.id });
+    res.json(dCheckout)
+
+  } catch (error) {
+    res.json(error)
+  }
+})
+app.delete("/Checkoutd", async (req, res) => {
+  try {
+    await CheckoutShema.deleteMany({})
+    res.json({ message: "All documents deleted successfully" });
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+app.delete("/CheckoutAll", async (req, res) => {
+  try {
+    const { Checkouts } = req.body;
+    await BookingSchema.deleteMany({ _id: { $in: Checkouts } });
+    res.json({ message: "Selected documents deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "An error occurred while deleting documents" });
+  }
+});
+app.get('/Checkoutpay', async (req, res) => {
+  try {
+    const { Checkouts } = req.body;
+    const Checkout = await BookingSchema.find({ _id: { $in: Checkouts } });
+    res.json(Checkout)
+  } catch (error) {
+    res.json(error)
+  }
+})
+// ajout doc Checkout
+app.post("/CheckoutDoc", async (req, res) => {
+  try {
+    const documents = req.body;
+    const result = await CheckoutShema.insertMany(documents);
+    res.json({ message: `${result.length} documents inserted successfully` });
+  } catch (error) {
+    res.json(error);
+  }
+});
