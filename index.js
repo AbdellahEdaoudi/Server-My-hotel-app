@@ -17,7 +17,8 @@ const upload = require("./middleware/multer");
 
 // CORS middleware with specific origin
 app.use(cors({
-  origin: 'https://edhotel.vercel.app',
+  // origin: 'https://edhotel.vercel.app',
+  origin: '*',
   methods: 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
   allowedHeaders: 'Content-Type, Authorization',
   credentials: true
