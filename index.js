@@ -13,18 +13,15 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cors = require("cors");
 const cloudinary = require("./utils/cloudinary");
-const upload = require("./middleware/multer")
-app.use(cors());
+const upload = require("./middleware/multer");
 
-// CORS middleware
-app.use((req, res, next) => {
-  //https://edhotel.vercel.app
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
+// CORS middleware with specific origin
+app.use(cors({
+  origin: 'https://edhotel.vercel.app',
+  methods: 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
+  allowedHeaders: 'Content-Type, Authorization',
+  credentials: true
+}));
 // VerifyToken middleware
 const VerifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
