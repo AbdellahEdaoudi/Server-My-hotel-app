@@ -19,7 +19,7 @@ const nodemailer = require("nodemailer")
 // CORS middleware with specific origin
 app.use((req, res, next) => {
  // https://edhotel.vercel.app
-  res.setHeader('Access-Control-Allow-Origin', 'https://edhotel.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin', 'https://edhotel.vercel.app',"*");
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -670,5 +670,39 @@ app.post('/SendEmail', async (req, res) => {
   } catch (error) {
       console.error('Error sending email: %s', error);
       res.json({ message: 'Error sending email', error });
+  }
+});
+
+app.post('/SendEmailAll', async (req, res) => {
+  const { to, subject, html } = req.body;
+
+  // Ensure 'to' is an array (in case of multiple emails)
+  const toEmails = Array.isArray(to) ? to : [to];
+
+  // Create a transporter object using SMTP transport
+  const transporter = nodemailer.createTransport({
+    service: 'gmail', // e.g., 'gmail'
+    auth: {
+      user: 'abdellahedaoudi80@gmail.com',
+      pass: 'ydfbzevdjnljtcnp'
+    }
+  });
+
+  // Setup email data
+  const mailOptions = {
+    from: 'abdellahedaoudi80@gmail.com', // sender address
+    to: toEmails.join(', '), // list of receivers as comma-separated string
+    subject: subject, // Subject line
+    html: html // HTML body
+  };
+
+  // Send mail with defined transport object
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s', info.messageId);
+    res.json({ message: 'Email sent successfully', info });
+  } catch (error) {
+    console.error('Error sending email: %s', error);
+    res.status(500).json({ message: 'Error sending email', error });
   }
 });
