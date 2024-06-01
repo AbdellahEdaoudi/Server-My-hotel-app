@@ -14,6 +14,7 @@ const bcrypt = require('bcrypt');
 const cors = require("cors");
 const cloudinary = require("./utils/cloudinary");
 const upload = require("./middleware/multer");
+const nodemailer = require("nodemailer")
 
 // CORS middleware with specific origin
 app.use(cors({
@@ -427,6 +428,17 @@ app.get('/Contact', async (req, res) => {
   }
 
 })
+//  get Contact by Id
+app.get('/Contact/:id', async (req, res) => {
+  try {
+    const Contact = await ContactSchema.findById({ _id: req.params.id });
+    res.json(Contact)
+
+  } catch (error) {
+    res.json(error)
+  }
+
+})
 //  ajouter nouveau Rooms
 app.post('/Contact', async (req, res) => {
   try {
@@ -624,5 +636,38 @@ app.post("/CheckoutDoc", async (req, res) => {
     res.json({ message: `${result.length} documents inserted successfully` });
   } catch (error) {
     res.json(error);
+  }
+});
+
+// SEND EMAIL
+
+app.post('/SendEmail', async (req, res) => {
+  const { to, subject,html } = req.body;
+
+  // Create a transporter object using SMTP transport
+  const transporter = nodemailer.createTransport({
+      service: 'gmail', // e.g., 'gmail'
+      auth: {
+          user: 'abdellahedaoudi80@gmail.com',
+          pass: 'ydfbzevdjnljtcnp'
+      }
+  });
+
+  // Setup email data
+  const mailOptions = {
+      from: 'abdellahedaoudi80@gmail.com', // sender address
+      to: to, // list of receivers
+      subject: subject, // Subject line
+      html: html // plain text body
+  };
+
+  // Send mail with defined transport object
+  try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Message sent: %s', info.messageId);
+      res.json({ message: 'Email sent successfully', info });
+  } catch (error) {
+      console.error('Error sending email: %s', error);
+      res.json({ message: 'Error sending email', error });
   }
 });
