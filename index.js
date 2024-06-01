@@ -19,7 +19,7 @@ const nodemailer = require("nodemailer")
 // CORS middleware with specific origin
 app.use(cors({
   // origin: 'https://edhotel.vercel.app',
-  origin: '*',
+  origin: 'https://edhotel.vercel.app',
   methods: 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
   allowedHeaders: 'Content-Type, Authorization',
   credentials: true
