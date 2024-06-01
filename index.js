@@ -580,6 +580,15 @@ app.get('/Checkout', async (req, res) => {
     res.json(error)
   }
 })
+app.get('/Checkout/:id', async (req, res) => {
+  try {
+    const Checkout = await CheckoutShema.findById({ _id: req.params.id });
+    res.json(Checkout)
+  } catch (error) {
+    res.json(error)
+  }
+
+})
 //  ajouter nouveau Checkout
 app.post('/Checkout', async (req, res) => {
 
