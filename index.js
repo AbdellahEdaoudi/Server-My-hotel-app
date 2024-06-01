@@ -495,6 +495,16 @@ app.get('/Booking', async (req, res) => {
     res.json(error)
   }
 })
+
+app.get('/Booking/:id', async (req, res) => {
+  try {
+    const Booking = await BookingSchema.findById({ _id: req.params.id });
+    res.json(Booking)
+  } catch (error) {
+    res.json(error)
+  }
+
+})
 //  ajouter nouveau Booking
 app.post('/Booking', async (req, res) => {
 
