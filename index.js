@@ -16,9 +16,7 @@ const cloudinary = require("./utils/cloudinary");
 const upload = require("./middleware/multer");
 const nodemailer = require("nodemailer")
 
-// CORS middleware with specific origin
 app.use((req, res, next) => {
- // https://edhotel.vercel.app
   res.setHeader('Access-Control-Allow-Origin', 'https://edhotel.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -662,33 +660,33 @@ app.post("/CheckoutDoc", async (req, res) => {
 // SEND EMAIL
 
 app.post('/SendEmail', async (req, res) => {
-  const { to, subject,html } = req.body;
+  const { to, subject, html } = req.body;
 
   // Create a transporter object using SMTP transport
   const transporter = nodemailer.createTransport({
-      service: 'gmail', // e.g., 'gmail'
-      auth: {
-          user: 'abdellahedaoudi80@gmail.com',
-          pass: 'ydfbzevdjnljtcnp'
-      }
+    service: 'gmail', // e.g., 'gmail'
+    auth: {
+      user: 'abdellahedaoudi80@gmail.com',
+      pass: 'ydfbzevdjnljtcnp'
+    }
   });
 
   // Setup email data
   const mailOptions = {
-      from: 'abdellahedaoudi80@gmail.com', // sender address
-      to: to, // list of receivers
-      subject: subject, // Subject line
-      html: html // plain text body
+    from: 'abdellahedaoudi80@gmail.com', // sender address
+    to: to, // list of receivers
+    subject: subject, // Subject line
+    html: html // plain text body
   };
 
   // Send mail with defined transport object
   try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Message sent: %s', info.messageId);
-      res.json({ message: 'Email sent successfully', info });
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s', info.messageId);
+    res.json({ message: 'Email sent successfully', info });
   } catch (error) {
-      console.error('Error sending email: %s', error);
-      res.json({ message: 'Error sending email', error });
+    console.error('Error sending email: %s', error);
+    res.json({ message: 'Error sending email', error });
   }
 });
 
