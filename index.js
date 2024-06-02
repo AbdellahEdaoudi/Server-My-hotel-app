@@ -17,13 +17,13 @@ const upload = require("./middleware/multer");
 const nodemailer = require("nodemailer")
 
 // CORS middleware with specific origin
-// CORS middleware
 const corsOptions = {
-  origin: 'https://edhotel.vercel.app',
+  origin: ['https://edhotel.vercel.app', 'http://localhost:3000'],
   methods: 'GET,POST,OPTIONS,PUT,PATCH,DELETE',
   allowedHeaders: 'Content-Type, Authorization',
   credentials: true
 };
+
 app.use(cors(corsOptions));
 // VerifyToken middleware
 const VerifyToken = (req, res, next) => {
