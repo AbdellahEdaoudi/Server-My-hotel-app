@@ -17,14 +17,11 @@ const upload = require("./middleware/multer");
 const nodemailer = require("nodemailer")
 
 // CORS middleware with specific origin
-app.use((req, res, next) => {
- // https://edhotel.vercel.app
-  res.setHeader('Access-Control-Allow-Origin', 'https://edhotel.vercel.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
+app.use(cors({
+  origin: 'https://edhotel.vercel.app',
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 // VerifyToken middleware
 const VerifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
