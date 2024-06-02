@@ -8,6 +8,7 @@ const RoomsSch = require("./Models/hotelSchema");
 const ContactSchema = require('./Models/ContactSchema');
 const BookingSchema = require('./Models/BookingSchema');
 const CheckoutShema = require('./Models/CheckoutShema');
+const AdminSchema = require('./Models/AdminSchema');
 const PORT = process.env.PORT || 4444;
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
@@ -17,7 +18,7 @@ const upload = require("./middleware/multer");
 const nodemailer = require("nodemailer")
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://edhotel.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -163,13 +164,13 @@ app.post('/Adminregister', async (req, res) => {
   if (!name || !email || !pass) {
     return res.status(400).json({ message: "All fields are required" });
   }
-  const foundUser = await User.findOne({ email }).exec();
+  const foundUser = await AdminSchema.findOne({ email }).exec();
   if (foundUser) {
     return res.status(401).json({ message: "User already exists" });
   }
   const hashedPassword = await bcrypt.hash(pass, 10);
 
-  const user = await new User({
+  const user = await new AdminSchema({
     name,
     email,
     pass: hashedPassword,
@@ -212,7 +213,7 @@ app.post("/Adminlogin", async (req, res) => {
   if (!email || !pass) {
     return res.status(400).json({ message: "All fields are required" });
   }
-  const foundUser = await User.findOne({ email }).exec();
+  const foundUser = await AdminSchema.findOne({ email }).exec();
   if (!foundUser) {
     return res.status(401).json({ message: "User does not exist" });
   }
