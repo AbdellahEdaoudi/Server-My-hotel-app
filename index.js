@@ -2,6 +2,7 @@ require('dotenv').config();
 const VerifyToken = require('./middleware/verifyToken');
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require('cors');
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 4444;
@@ -14,13 +15,14 @@ const checkoutController = require('./Controllers/checkoutController');
 const emailController = require('./Controllers/emailController'); 
 const upload = require("./middleware/multer");
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 
 // Connect to Mongodb Atlas
 mongoose.set('strictQuery', true);
