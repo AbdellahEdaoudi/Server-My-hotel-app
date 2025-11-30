@@ -12,7 +12,7 @@ const roomsController = require('./Controllers/roomsController');
 const contactController = require('./Controllers/contactController');
 const bookingController = require('./Controllers/bookingController');
 const checkoutController = require('./Controllers/checkoutController');
-const emailController = require('./Controllers/emailController'); 
+const emailController = require('./Controllers/emailController');
 const upload = require("./middleware/multer");
 
 const corsOptions = {
@@ -48,6 +48,9 @@ app.post('/logout', userController.logoutUser);
 // Admin Routes
 app.post('/register', adminController.registerAdmin);
 app.post('/login', adminController.loginAdmin);
+
+// Delete all data from all collections (admin only)
+// app.delete('/clearAll', adminController.clearDatabase);
 
 // Rooms Routes
 app.get('/Rooms', roomsController.getRooms);

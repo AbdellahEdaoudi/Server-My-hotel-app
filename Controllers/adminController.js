@@ -26,7 +26,7 @@ exports.registerAdmin = async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "7d" }
   );
-  
+
   res.cookie("jwt", refreshToken, {
     httpOnly: true,
     secure: true,
@@ -63,7 +63,7 @@ exports.loginAdmin = async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "7d" }
   );
-  
+
   res.cookie("jwt", refreshToken, {
     httpOnly: true,
     secure: true,
@@ -76,3 +76,34 @@ exports.loginAdmin = async (req, res) => {
     name: foundUser.name,
   });
 };
+
+// Delete all data from all collections (admin only)
+exports.clearDatabase = async (req, res) => {
+  try {
+    // Import models locally to avoid circular dependencies
+    const Admin = require('../Models/AdminSchema');
+    const User = require('../Models/UserSchema');
+    const Hotel = require('../Models/hotelSchema');
+    const Contact = require('../Models/ContactSchema');
+    const Booking = require('../Models/BookingSchema');
+    const Checkout = require('../Models/CheckoutShema');
+    const Room = require('../Models/hotelSchema'); // Assuming rooms stored in hotelSchema
+
+    await Promise.all([
+      Admin.deleteMany({}),
+      User.deleteMany({}),
+      Hotel.deleteMany({}),
+      Contact.deleteMany({}),
+      Booking.deleteMany({}),
+      Checkout.deleteMany({}),
+      Room.deleteMany({}),
+    ]);
+
+    res.json({ message: 'All data cleared successfully.' });
+  } catch (error) {
+    console.error('Error clearing database:', error);
+    res.status(500).json({ message: 'Failed to clear database.', error: error.message });
+  }
+};
+
+
