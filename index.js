@@ -1,34 +1,24 @@
 require('dotenv').config();
 const express = require("express");
-const mongoose = require("mongoose");
+const app = express();
+const PORT = 4444;
+const path = require("path")
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const app = express();
+const { connectDB } = require('./config/dbConnect');
+const { corsOption } = require(path.join(__dirname, 'config', 'corsOptions'));
 
-// Middleware
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+// Connect to Database
+connectDB();
+app.use(cors(corsOption));
 app.use(express.json());
 app.use(cookieParser());
 
-const PORT = process.env.PORT || 4444;
 
-const corsOptions = {
-  origin: ['http://localhost:3000', 'https://edhotel.vercel.app'],
-  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  credentials: true
-};
-
-app.use(cors(corsOptions));
-
-// Connect to Mongodb Atlas
-mongoose.set('strictQuery', true);
-mongoose.connect(process.env.URL_DATABASE)
-  .then(() => {
-    console.log(`Connected to Mongodb Atlas`);
-  })
-  .catch(err => {
-    console.error('MongoDB Connection Error:', err);
-  });
 
 // Root route
 app.get('/', (req, res) => {
@@ -52,8 +42,4 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Something went wrong!", error: err.message });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
