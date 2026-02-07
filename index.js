@@ -12,7 +12,7 @@ app.use(cookieParser());
 const PORT = process.env.PORT || 4444;
 
 const corsOptions = {
-  origin: 'http://localhost:3000', // Allow frontend origin
+  origin: ['http://localhost:3000', 'https://edhotel.vercel.app'],
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   credentials: true
