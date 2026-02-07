@@ -79,6 +79,7 @@ exports.loginUser = async (req, res) => {
       id: foundUser._id,
       name: foundUser.name,
       email: foundUser.email,
+      role: foundUser.role,
     }
   });
 };
