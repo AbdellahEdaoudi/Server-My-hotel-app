@@ -1,25 +1,24 @@
 const mongoose = require('mongoose');
 
 const BookingSchema = new mongoose.Schema({
-    nameC: {
-        type: String,
-        required: true,
-        trim: true,
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user', // References the User model
+        required: true
     },
-    email: {
-        type: String,
-        required: true,
-        trim: true,
+    room: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'hotel', // References the Hotel (Room) model
+        required: true
     },
-    nameR: {
+    status: {
         type: String,
-        required: true,
-        trim: true,
+        enum: ['pending', 'paid', 'cancelled'],
+        default: 'pending' // pending = in cart/booking, paid = checkout complete
     },
     prix: {
         type: Number,
         required: true,
-        trim: true,
     },
     check_in: {
         type: Date,
@@ -31,8 +30,8 @@ const BookingSchema = new mongoose.Schema({
     },
     created_at: {
         type: Date,
-        default: Date.now(),
+        default: Date.now,
     }
 });
 
-module.exports = Booking = mongoose.model('Booking', BookingSchema);
+module.exports = mongoose.model('Booking', BookingSchema);

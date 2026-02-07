@@ -1,24 +1,20 @@
 require('dotenv').config();
-const VerifyToken = require('./middleware/verifyToken');
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const app = express();
+
+// Middleware
 app.use(express.json());
+app.use(cookieParser());
+
 const PORT = process.env.PORT || 4444;
-const userController = require("./Controllers/userController")
-const adminController = require("./Controllers/adminController")
-const roomsController = require('./Controllers/roomsController');
-const contactController = require('./Controllers/contactController');
-const bookingController = require('./Controllers/bookingController');
-const checkoutController = require('./Controllers/checkoutController');
-const emailController = require('./Controllers/emailController');
-const upload = require("./middleware/multer");
 
 const corsOptions = {
-  origin: '*',
+  origin: 'http://localhost:3000', // Allow frontend origin
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   credentials: true
 };
 
@@ -28,68 +24,36 @@ app.use(cors(corsOptions));
 mongoose.set('strictQuery', true);
 mongoose.connect(process.env.URL_DATABASE)
   .then(() => {
-    console.log(`Connect to Mongodb Atlas`);
+    console.log(`Connected to Mongodb Atlas`);
   })
   .catch(err => {
-    console.error(err);
+    console.error('MongoDB Connection Error:', err);
   });
 
-app.listen(PORT, () => {
-  console.log(`Server runing in port ${PORT}`);
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: "Welcome to EdHotel API" });
 });
 
-// User Routes
-app.get('/users', userController.getUsers);
-app.post('/register', userController.registerUser);
-app.post('/login', userController.loginUser);
-app.get('/refresh', userController.refreshToken);
-app.post('/logout', userController.logoutUser);
+// Routes
+app.use('/api/users', require('./Routes/userRoutes'));
+app.use('/api/rooms', require('./Routes/roomRoutes'));
+app.use('/api/contact', require('./Routes/contactRoutes'));
+app.use('/api/booking', require('./Routes/bookingRoutes'));
+app.use('/api/email', require('./Routes/emailRoutes'));
+app.use('/api/admin', require('./Routes/adminRoutes'));
 
-// Admin Routes
-app.post('/register', adminController.registerAdmin);
-app.post('/login', adminController.loginAdmin);
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
 
-// Delete all data from all collections (admin only)
-// app.delete('/clearAll', adminController.clearDatabase);
+// Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Something went wrong!", error: err.message });
+});
 
-// Rooms Routes
-app.get('/Rooms', roomsController.getRooms);
-app.post('/Rooms', upload.single('image'), roomsController.createRoom);
-app.post('/Roomss', roomsController.bulkInsertRooms);
-app.get('/Rooms/:id', roomsController.getRoomById);
-app.put('/Rooms/:id', upload.single('image'), roomsController.updateRoom);
-app.delete('/Rooms/:id', roomsController.deleteRoom);
-app.delete('/Roomsd', roomsController.deleteAllRooms);
-
-// Contact Routes
-app.get('/Contact', contactController.getContacts);
-app.get('/Contact/:id', contactController.getContactById);
-app.post('/Contact', contactController.createContact);
-app.delete('/Contact', contactController.deleteAllContacts);
-app.post('/ContactDoc', contactController.bulkInsertContacts);
-app.delete('/Contact/:id', contactController.deleteContactById);
-
-// Booking Routes
-app.get('/Booking', bookingController.getAllBookings);
-app.get('/Booking/:id', bookingController.getBookingById);
-app.post('/Booking', bookingController.createBooking);
-app.put('/Booking/:id', bookingController.updateBookingById);
-app.delete('/Booking/:id', bookingController.deleteBookingById);
-app.delete('/Bookingd', bookingController.deleteAllBookings);
-app.delete('/BookingdAll', bookingController.deleteSelectedBookings);
-app.get('/Bookingpay', bookingController.getBookingsByIds);
-
-// Payment Routes
-app.get('/Checkout', checkoutController.getAllCheckouts);
-app.get('/Checkout/:id', checkoutController.getCheckoutById);
-app.post('/Checkout', checkoutController.createCheckout);
-app.put('/Checkout/:id', checkoutController.updateCheckoutById);
-app.delete('/Checkout/:id', checkoutController.deleteCheckoutById);
-app.delete('/Checkoutd', checkoutController.deleteAllCheckouts);
-app.delete('/CheckoutAll', checkoutController.deleteSelectedCheckouts);
-app.get('/Checkoutpay', checkoutController.getCheckoutsByIds);
-app.post('/CheckoutDoc', checkoutController.addMultipleCheckouts);
-
-// SEND EMAIL
-app.post('/SendEmail', emailController.sendEmail);
-app.post('/SendEmailAll', emailController.sendEmailAll);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

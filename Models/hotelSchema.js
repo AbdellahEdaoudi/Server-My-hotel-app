@@ -25,16 +25,14 @@ const hotelSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  prix: { 
+  prix: {
     type: Number,
     required: true,
   },
   created_at: {
     type: Date,
-    default: Date.now(),
-}
+    default: Date.now,
+  }
 });
-
-
 
 module.exports = Hotel = mongoose.model('hotel', hotelSchema);

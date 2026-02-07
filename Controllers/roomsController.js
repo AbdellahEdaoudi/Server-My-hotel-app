@@ -43,21 +43,6 @@ exports.createRoom = async (req, res) => {
   }
 };
 
-// POST /Roomss (bulk insert)
-exports.bulkInsertRooms = async (req, res) => {
-  try {
-    const documents = req.body;
-    if (!Array.isArray(documents) || documents.length === 0) {
-      return res.status(400).json({ message: "Invalid input data" });
-    }
-
-    const result = await RoomsSch.insertMany(documents);
-    res.status(201).json({ message: `${result.length} documents inserted successfully` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error inserting documents", error: error.message });
-  }
-};
 
 // GET /Rooms/:id
 exports.getRoomById = async (req, res) => {
@@ -122,16 +107,5 @@ exports.deleteRoom = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error deleting room", error: error.message });
-  }
-};
-
-// DELETE /Roomsd
-exports.deleteAllRooms = async (req, res) => {
-  try {
-    await RoomsSch.deleteMany({});
-    res.status(200).json({ message: "All documents deleted successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error deleting documents", error: error.message });
   }
 };

@@ -1,109 +1,233 @@
-const AdminSchema = require("../Models/AdminSchema");
+const BookingSchema = require('../Models/BookingSchema');
+const Booking = require('../Models/BookingSchema');
+const ContactSchema = require('../Models/ContactSchema');
+const Contact = require('../Models/ContactSchema');
+const RoomsSch = require('../Models/hotelSchema');
+const User = require('../Models/UserSchema');
+const cloudinary = require('../utils/cloudinary');
 const bcrypt = require('bcrypt');
-const jwt = require("jsonwebtoken");
 
-// Register admin
-exports.registerAdmin = async (req, res) => {
-  const { name, email, pass } = req.body;
-  if (!name || !email || !pass) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-  const foundUser = await AdminSchema.findOne({ email }).exec();
-  if (foundUser) {
-    return res.status(401).json({ message: "User already exists" });
-  }
-  const hashedPassword = await bcrypt.hash(pass, 10);
-  const user = new AdminSchema({ name, email, pass: hashedPassword });
-  await user.save();
-
-  const accessTokenAdmin = jwt.sign(
-    { UserInfo: { id: user._id } },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "30m" }
-  );
-  const refreshToken = jwt.sign(
-    { UserInfo: { id: user._id } },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  res.cookie("jwt", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-  res.json({
-    accessToken: accessTokenAdmin,
-    email: user.email,
-    name: user.name,
-  });
+// --- BOOKINGS ---
+exports.getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find()
+            .populate('user', 'name email')
+            .populate('room', 'name')
+            .sort({ created_at: -1 })
+            .lean();
+        res.json(bookings);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching bookings", error: error.message });
+    }
 };
 
-// Login admin
-exports.loginAdmin = async (req, res) => {
-  const { email, pass } = req.body;
-  if (!email || !pass) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-  const foundUser = await AdminSchema.findOne({ email }).exec();
-  if (!foundUser) {
-    return res.status(401).json({ message: "User does not exist" });
-  }
-  const match = await bcrypt.compare(pass, foundUser.pass);
-  if (!match) return res.status(401).json({ message: "Wrong Password" });
-
-  const accessTokenAdmin = jwt.sign(
-    { UserInfo: { id: foundUser._id } },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "60m" }
-  );
-  const refreshToken = jwt.sign(
-    { UserInfo: { id: foundUser._id } },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  res.cookie("jwt", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-  res.json({
-    accessToken: accessTokenAdmin,
-    email: foundUser.email,
-    name: foundUser.name,
-  });
+exports.deleteBooking = async (req, res) => {
+    try {
+        await Booking.findByIdAndDelete(req.params.id);
+        res.json({ message: "Booking deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting booking", error: error.message });
+    }
 };
 
-// Delete all data from all collections (admin only)
-exports.clearDatabase = async (req, res) => {
-  try {
-    // Import models locally to avoid circular dependencies
-    const Admin = require('../Models/AdminSchema');
-    const User = require('../Models/UserSchema');
-    const Hotel = require('../Models/hotelSchema');
-    const Contact = require('../Models/ContactSchema');
-    const Booking = require('../Models/BookingSchema');
-    const Checkout = require('../Models/CheckoutShema');
-    const Room = require('../Models/hotelSchema'); // Assuming rooms stored in hotelSchema
-
-    await Promise.all([
-      Admin.deleteMany({}),
-      User.deleteMany({}),
-      Hotel.deleteMany({}),
-      Contact.deleteMany({}),
-      Booking.deleteMany({}),
-      Checkout.deleteMany({}),
-      Room.deleteMany({}),
-    ]);
-
-    res.json({ message: 'All data cleared successfully.' });
-  } catch (error) {
-    console.error('Error clearing database:', error);
-    res.status(500).json({ message: 'Failed to clear database.', error: error.message });
-  }
+// --- CONTACTS ---
+exports.getAllContacts = async (req, res) => {
+    try {
+        const contacts = await Contact.find()
+            .populate('user', 'name email')
+            .sort({ created_at: -1 })
+            .lean();
+        res.json(contacts);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching contacts", error: error.message });
+    }
 };
 
+exports.deleteContact = async (req, res) => {
+    try {
+        await Contact.findByIdAndDelete(req.params.id);
+        res.json({ message: "Contact deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting contact", error: error.message });
+    }
+};
 
+exports.getContactById = async (req, res) => {
+    try {
+        const contact = await Contact.findById(req.params.id).populate('user', 'name email');
+        if (!contact) {
+            return res.status(404).json({ message: "Contact not found" });
+        }
+        res.json(contact);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching contact", error: error.message });
+    }
+};
+
+// --- ROOMS (MANAGEMENT) ---
+exports.createRoom = async (req, res) => {
+    try {
+        const { name, type, description, capacity, prix } = req.body;
+        if (!name || !type || !description || !capacity || !prix) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        let imageUrl = '';
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageUrl = result.secure_url;
+        }
+
+        const newRoom = new RoomsSch({
+            name,
+            type,
+            description,
+            capacity,
+            prix,
+            imageUrl
+        });
+
+        const savedRoom = await newRoom.save();
+        res.status(201).json(savedRoom);
+    } catch (error) {
+        res.status(500).json({ message: "Error creating room", error: error.message });
+    }
+};
+
+exports.updateRoom = async (req, res) => {
+    try {
+        const { name, type, description, capacity, prix } = req.body;
+
+        let updatedRoomData = {
+            name,
+            type,
+            description,
+            capacity,
+            prix
+        };
+
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            updatedRoomData.imageUrl = result.secure_url;
+        }
+
+        const updatedRoom = await RoomsSch.findByIdAndUpdate(
+            req.params.id,
+            updatedRoomData,
+            { new: true }
+        );
+
+        if (!updatedRoom) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+        res.json(updatedRoom);
+    } catch (error) {
+        res.status(500).json({ message: "Error updating room", error: error.message });
+    }
+};
+
+exports.deleteRoom = async (req, res) => {
+    try {
+        const room = await RoomsSch.findById(req.params.id);
+        if (!room) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+
+        // Delete image from Cloudinary if exists
+        if (room.imageUrl) {
+            try {
+                // Extract public_id from URL
+                // Check if it's a cloudinary URL just in case
+                if (room.imageUrl.includes('cloudinary')) {
+                    const parts = room.imageUrl.split('/');
+                    const filename = parts[parts.length - 1];
+                    const publicId = filename.split('.')[0];
+                    await cloudinary.uploader.destroy(publicId);
+                }
+            } catch (err) {
+                console.error("Error deleting image from Cloudinary:", err);
+            }
+        }
+
+        await RoomsSch.findByIdAndDelete(req.params.id);
+        res.json({ message: "Room deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting room", error: error.message });
+    }
+};
+
+// --- USERS (MANAGEMENT) ---
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find().select("-password");
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching users", error: error.message });
+    }
+};
+
+exports.createUser = async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: "User already exists" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: role || 'user'
+        });
+
+        await newUser.save();
+        res.status(201).json({ message: "User created successfully", user: newUser });
+    } catch (error) {
+        res.status(500).json({ message: "Error creating user", error: error.message });
+    }
+};
+
+exports.updateUser = async (req, res) => {
+    try {
+        const { name, email, role, password } = req.body;
+
+        const updateData = { name, email, role };
+
+        // If password is provided, hash it and add to updateData
+        if (password && password.trim() !== "") {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateData.password = hashedPassword;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ message: "Error updating user", error: error.message });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        await BookingSchema.deleteMany({ user: req.params.id });
+        await ContactSchema.deleteMany({ user: req.params.id });
+        res.json({ message: "User deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting user", error: error.message });
+    }
+};
