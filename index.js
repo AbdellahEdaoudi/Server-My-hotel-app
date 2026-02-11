@@ -6,6 +6,7 @@ const path = require("path")
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { connectDB } = require('./config/dbConnect');
+const BookingSchema = require('./Models/BookingSchema');
 const { corsOption } = require(path.join(__dirname, 'config', 'corsOptions'));
 
 // Start the server
@@ -33,6 +34,10 @@ app.use('/api/booking', require('./Routes/bookingRoutes'));
 app.use('/api/email', require('./Routes/emailRoutes'));
 app.use('/api/admin', require('./Routes/adminRoutes'));
 
+app.get('/test', async (req, res) => {
+  const test = await BookingSchema.find();
+  res.json(test);
+}); 
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

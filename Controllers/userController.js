@@ -2,15 +2,6 @@ const User = require("../Models/UserSchema");
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 
-// Get users
-exports.getUsers = async (req, res) => {
-  const users = await User.find().select("-password").lean();
-  if (!users.length) {
-    return res.status(400).json({ message: "No users found" });
-  }
-  res.json(users);
-};
-
 // Register user
 exports.registerUser = async (req, res) => {
   const { name, email, password } = req.body;
@@ -106,19 +97,14 @@ exports.refreshToken = async (req, res) => {
 };
 
 // Logout user
-exports.logoutUser = async (req, res) => {
-  const cookies = req.cookies;
-  if (!cookies?.jwt) return res.status(401).json({ message: "Unauthorized" });
-
-  res.clearCookie("jwt", {
+exports.logout = (req, res) => {
+  const cookieOptions = {
     httpOnly: true,
-    sameSite: "None",
     secure: true,
-  });
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    sameSite: "None",
-    secure: true,
-  });
-  res.json({ message: "Cookie cleared" });
+    sameSite: 'None',
+    path: '/'
+  };
+  res.clearCookie('jwt', cookieOptions);
+  res.clearCookie('accessToken', cookieOptions);
+  res.status(200).json({ message: 'Logged out successfully' });
 };
