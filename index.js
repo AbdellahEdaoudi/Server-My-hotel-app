@@ -31,13 +31,12 @@ app.use('/api/users', require('./Routes/userRoutes'));
 app.use('/api/rooms', require('./Routes/roomRoutes'));
 app.use('/api/contact', require('./Routes/contactRoutes'));
 app.use('/api/booking', require('./Routes/bookingRoutes'));
-app.use('/api/email', require('./Routes/emailRoutes'));
 app.use('/api/admin', require('./Routes/adminRoutes'));
 
 app.get('/test', async (req, res) => {
   const test = await BookingSchema.find();
   res.json(test);
-}); 
+});
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
