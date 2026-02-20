@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require("express");
 const app = express();
-const PORT = 4444;
+const PORT = process.env.PORT || 4444;
 const path = require("path")
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -9,10 +9,6 @@ const { connectDB } = require('./config/dbConnect');
 const BookingSchema = require('./Models/BookingSchema');
 const { corsOption } = require(path.join(__dirname, 'config', 'corsOptions'));
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 // Connect to Database
 connectDB();
 app.use(cors(corsOption));
@@ -37,6 +33,7 @@ app.get('/test', async (req, res) => {
   const test = await BookingSchema.find();
   res.json(test);
 });
+
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
@@ -47,3 +44,12 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Something went wrong!", error: err.message });
 });
+
+// Start the server only if run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
